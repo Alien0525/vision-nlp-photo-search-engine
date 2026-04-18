@@ -33,4 +33,3 @@ This project follows an event-driven serverless architecture on AWS:
 
 ## Course Information
 Course: Cloud Computing and Big Data Systems (Spring 2026)
-Assignment: Assignment 3
