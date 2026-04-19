@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI-Powered Photo Search - Search your photos using natural language">
+    <title>Vision NLP Photo Search</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-camera-retro"></i>
+                    <h1>Vision<span>Search</span></h1>
+                </div>
+                <p class="tagline">AI-Powered Photo Discovery</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            
+            <!-- Search Section -->
+            <section class="search-section">
+                <div class="section-header">
+                    <i class="fas fa-search"></i>
+                    <h2>Search Your Photos</h2>
+                </div>
+                <p class="section-description">
+                    Use natural language to find your photos. Try: "show me dogs", "cats and trees", or "beach sunset"
+                </p>
+                
+                <div class="search-container">
+                    <div class="search-input-wrapper">
+                        <i class="fas fa-search search-icon"></i>
+                        <input 
+                            type="text" 
+                            id="searchInput" 
+                            class="search-input"
+                            placeholder="e.g., show me dogs and cats..."
+                            autocomplete="off"
+                        >
+                        <button id="clearSearchBtn" class="clear-btn" style="display: none;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <button onclick="searchPhotos()" class="btn btn-primary">
+                        <i class="fas fa-search"></i>
+                        Search
+                    </button>
+                </div>
+
+                <!-- Search Results -->
+                <div id="searchResults" class="search-results">
+                    <div class="welcome-message">
+                        <i class="fas fa-images"></i>
+                        <h3>Start Searching</h3>
+                        <p>Enter keywords to find your photos using AI-powered search</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Upload Section -->
+            <section class="upload-section">
+                <div class="section-header">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <h2>Upload New Photos</h2>
+                </div>
+                <p class="section-description">
+                    Upload photos to add them to your searchable album. Add custom labels for better search results.
+                </p>
+
+                <div class="upload-container">
+                    <div class="file-upload-wrapper">
+                        <input 
+                            type="file" 
+                            id="fileInput" 
+                            accept="image/jpeg,image/jpg,image/png,image/webp"
+                            class="file-input"
+                        >
+                        <label for="fileInput" class="file-label">
+                            <i class="fas fa-image"></i>
+                            <span id="fileName">Choose an image file</span>
+                            <span class="file-hint">JPEG, PNG, or WebP</span>
+                        </label>
+                    </div>
+
+                    <div class="custom-labels-wrapper">
+                        <label for="customLabelsInput" class="input-label">
+                            <i class="fas fa-tags"></i>
+                            Custom Labels (Optional)
+                        </label>
+                        <input 
+                            type="text" 
+                            id="customLabelsInput" 
+                            class="custom-labels-input"
+                            placeholder="e.g., John, Birthday Party, Summer 2024"
+                        >
+                        <small class="input-hint">Separate multiple labels with commas</small>
+                    </div>
+
+                    <button onclick="uploadPhoto()" class="btn btn-success btn-upload">
+                        <i class="fas fa-upload"></i>
+                        Upload Photo
+                    </button>
+
+                    <!-- Upload Status -->
+                    <div id="uploadStatus" class="upload-status"></div>
+
+                    <!-- Preview -->
+                    <div id="imagePreview" class="image-preview" style="display: none;">
+                        <img id="previewImg" src="" alt="Preview">
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Image Modal/Lightbox -->
+    <div id="imageModal" class="modal">
+        <span class="modal-close" onclick="closeModal()">&times;</span>
+        <img class="modal-content" id="modalImage">
+        <div class="modal-caption" id="modalCaption"></div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
+        <p>Processing...</p>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 VisionSearch</p>
+            <p class="footer-tech">
+                <span><i class="fas fa-bolt"></i> Powered by AWS Rekognition, Lex & ElasticSearch</span>
+            </p>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
