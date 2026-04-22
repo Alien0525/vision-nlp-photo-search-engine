@@ -1,0 +1,21 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.12
+  
+  build:
+    commands:
+      - echo "Building Lambda functions..."
+      - cd lambda-functions/LF1
+      - zip -r lf1.zip lambda_function.py
+      - cd ../LF2
+      - zip -r lf2.zip lambda_function.py
+      - cd ../..
+      
+artifacts:
+  files:
+    - lambda-functions/LF1/lf1.zip
+    - lambda-functions/LF2/lf2.zip
+  discard-paths: yes
