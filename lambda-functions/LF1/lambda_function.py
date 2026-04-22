@@ -12,7 +12,7 @@ rekognition_client = boto3.client('rekognition')
 
 # --- CONFIGURATION ---
 REGION = os.environ.get('AWS_REGION', 'us-east-1')
-HOST = os.environ['OPENSEARCH_HOST']  # e.g., 'search-photos-xxxxx.us-east-1.es.amazonaws.com'
+HOST = os.environ['OPENSEARCH_HOST'] 
 INDEX = 'photos'
 # ------------------------------------
 
