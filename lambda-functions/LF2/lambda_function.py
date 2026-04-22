@@ -61,8 +61,24 @@ def lambda_handler(event, context):
             'body': json.dumps([])
         }
     
-    # 4. Query OpenSearch
-    should_clauses = [{"match": {"labels": kw.lower()}} for kw in keywords]
+    # 4. Expand keywords to handle singular/plural
+    keywords_expanded = []
+    for kw in keywords:
+        kw_lower = kw.lower()
+        keywords_expanded.append(kw_lower)
+        # Add singular if ends with 's'
+        if kw_lower.endswith('s') and len(kw_lower) > 1:
+            keywords_expanded.append(kw_lower[:-1])
+        # Add plural if doesn't end with 's'
+        elif not kw_lower.endswith('s'):
+            keywords_expanded.append(kw_lower + 's')
+    
+    # Remove duplicates
+    keywords_expanded = list(set(keywords_expanded))
+    print(f"Expanded Keywords: {keywords_expanded}")
+    
+    # 5. Query OpenSearch
+    should_clauses = [{"match": {"labels": kw}} for kw in keywords_expanded]
     os_query = {
         "query": {
             "bool": {
@@ -107,7 +123,7 @@ def lambda_handler(event, context):
         source = hit['_source']
         bucket = source['bucket']
         key = source['objectKey']
-        url = f"https://{bucket}.s3.amazonaws.com/{key}"
+        url = f"https://b2-aman-cc-photos.s3.us-east-1.amazonaws.com/{key}"
         image_urls.append(url)
     
     print(f"Found {len(image_urls)} photos")
