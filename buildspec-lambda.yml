@@ -3,9 +3,15 @@ version: 0.2
 phases:
   build:
     commands:
-      - echo "Packaging Lambda functions..."
-      
+      - echo "Packaging LF1 and LF2 as separate artifacts..."
+
 artifacts:
-  files:
-    - '**/*'
-  base-directory: lambda-functions
+  secondary-artifacts:
+    LF1Artifact:
+      base-directory: lambda-functions/LF1
+      files:
+        - '**/*'
+    LF2Artifact:
+      base-directory: lambda-functions/LF2
+      files:
+        - '**/*'
