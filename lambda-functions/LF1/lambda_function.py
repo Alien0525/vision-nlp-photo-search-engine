@@ -41,7 +41,7 @@ def lambda_handler(event, context):
             head_response = s3_client.head_object(Bucket=bucket, Key=object_key)
             metadata = head_response.get('Metadata', {})
             
-            custom_labels = metadata.get('x-amz-meta-customlabels', metadata.get('customlabels', ''))
+            custom_labels = metadata.get('x-amz-meta-customLabels', metadata.get('customlabels', ''))
             if custom_labels:
                 custom_list = [l.strip().lower() for l in custom_labels.split(',')]
                 labels.extend(custom_list)
