@@ -32,4 +32,4 @@ This project follows an event-driven serverless architecture on AWS:
 * DevOps: GitHub, AWS CodePipeline, AWS CloudFormation
 
 ## Course Information
-Course: Cloud Computing and Big Data Systems (Spring 2026)
+Course: Cloud Computing and Big Data (Spring 2026)
