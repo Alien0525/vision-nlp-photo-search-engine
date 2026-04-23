@@ -1,0 +1,268 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Cloud Computing Assignment 3 - Photo Album Application Stack'
+
+Parameters:
+  BucketNamePrefix:
+    Type: String
+    Default: aman-cc-photo-app
+    Description: Prefix for S3 bucket names to ensure they are globally unique.
+
+Resources:
+  # ---------------------------------------------------------
+  # 1. Frontend S3 Bucket (Static Website Hosting)
+  # ---------------------------------------------------------
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${BucketNamePrefix}-frontend'
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: '*'
+            Action: s3:GetObject
+            Resource: !Sub 'arn:aws:s3:::${FrontendBucket}/*'
+
+  # ---------------------------------------------------------
+  # 2. Photo Storage S3 Bucket
+  # ---------------------------------------------------------
+  PhotoStorageBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${BucketNamePrefix}-photos'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+
+  PhotoStorageBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref PhotoStorageBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: '*'
+            Action: s3:GetObject
+            Resource: !Sub 'arn:aws:s3:::${PhotoStorageBucket}/*'
+
+  # ---------------------------------------------------------
+  # 3. IAM Role for Lambda Functions
+  # ---------------------------------------------------------
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: PhotoAppLambdaPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:HeadObject
+                  - rekognition:DetectLabels
+                  - lex:PostText
+                  - lex:RecognizeText
+                  - es:ESHttpPost
+                  - es:ESHttpPut
+                  - es:ESHttpGet
+                Resource: '*'
+
+  # ---------------------------------------------------------
+  # 4. Lambda Functions (with hardcoded base code)
+  # ---------------------------------------------------------
+  IndexPhotosLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: index-photos-cfn
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: python3.12
+      Environment:
+        Variables:
+          OPENSEARCH_HOST: "placeholder-opensearch-url"
+      Code:
+        ZipFile: |
+          import json
+          def handler(event, context):
+              print("Indexing photo...")
+              return {
+                  'statusCode': 200,
+                  'body': json.dumps('Index photos Lambda created by CloudFormation!')
+              }
+
+  SearchPhotosLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: search-photos-cfn
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: python3.12
+      Environment:
+        Variables:
+          OPENSEARCH_HOST: "placeholder-opensearch-url"
+          LEX_BOT_ID: "placeholder-bot-id"
+          PHOTO_BUCKET: !Ref PhotoStorageBucket
+      Code:
+        ZipFile: |
+          import json
+          def handler(event, context):
+              print("Searching photos...")
+              return {
+                  'statusCode': 200,
+                  'headers': {'Access-Control-Allow-Origin': '*'},
+                  'body': json.dumps([])
+              }
+
+  # ---------------------------------------------------------
+  # 5. API Gateway
+  # ---------------------------------------------------------
+  PhotoAlbumApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: PhotoAlbumAPI-CFN
+      Description: API for the Photo Album Application
+
+  ApiPhotosResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !GetAtt PhotoAlbumApi.RootResourceId
+      PathPart: photos
+      RestApiId: !Ref PhotoAlbumApi
+
+  ApiSearchResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !GetAtt PhotoAlbumApi.RootResourceId
+      PathPart: search
+      RestApiId: !Ref PhotoAlbumApi
+
+  # PUT /photos method (S3 Proxy)
+  PutPhotosMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref PhotoAlbumApi
+      ResourceId: !Ref ApiPhotosResource
+      HttpMethod: PUT
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS
+        IntegrationHttpMethod: PUT
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:s3:path/${PhotoStorageBucket}/{object}'
+        Credentials: !GetAtt ApiGatewayS3Role.Arn
+        RequestParameters:
+          integration.request.path.object: method.request.querystring.filename
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+      RequestParameters:
+        method.request.querystring.filename: true
+
+  # GET /search method
+  GetSearchMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref PhotoAlbumApi
+      ResourceId: !Ref ApiSearchResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SearchPhotosLambda.Arn}/invocations'
+      MethodResponses:
+        - StatusCode: 200
+
+  # API Gateway deployment
+  ApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - PutPhotosMethod
+      - GetSearchMethod
+    Properties:
+      RestApiId: !Ref PhotoAlbumApi
+      StageName: dev
+      Description: !Sub 'Deployment at ${AWS::StackName}'
+
+  # Lambda invoke permissions
+  SearchPhotosInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref SearchPhotosLambda
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PhotoAlbumApi}/*/*'
+
+  # API Gateway S3 role
+  ApiGatewayS3Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: S3PutObjectPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource: !Sub 'arn:aws:s3:::${PhotoStorageBucket}/*'
+
+# ---------------------------------------------------------
+# 6. Outputs
+# ---------------------------------------------------------
+Outputs:
+  FrontendWebsiteURL:
+    Description: URL of the hosted frontend website
+    Value: !GetAtt FrontendBucket.WebsiteURL
+    
+  ApiGatewayURL:
+    Description: API Gateway endpoint URL
+    Value: !Sub 'https://${PhotoAlbumApi}.execute-api.${AWS::Region}.amazonaws.com/dev'
+    
+  PhotoStorageBucketName:
+    Description: Name of the photo storage bucket
+    Value: !Ref PhotoStorageBucket
+    
+  FrontendBucketName:
+    Description: Name of the frontend bucket
+    Value: !Ref FrontendBucket
