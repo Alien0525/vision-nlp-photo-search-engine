@@ -358,7 +358,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ===========================
-// Service Worker (Optional - for offline support)
+// Service Worker
 // ===========================
 
 if ('serviceWorker' in navigator) {
